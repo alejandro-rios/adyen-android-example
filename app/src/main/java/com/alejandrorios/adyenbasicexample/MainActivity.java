@@ -18,19 +18,26 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.adyen.checkout.core.CheckoutException;
+import com.adyen.checkout.core.PaymentController;
 import com.adyen.checkout.core.PaymentMethodHandler;
+import com.adyen.checkout.core.PaymentReference;
 import com.adyen.checkout.core.PaymentResult;
+import com.adyen.checkout.core.PaymentSetupParameters;
 import com.adyen.checkout.core.StartPaymentParameters;
+import com.adyen.checkout.core.handler.PaymentSetupParametersHandler;
 import com.adyen.checkout.core.handler.StartPaymentParametersHandler;
+import com.adyen.checkout.core.model.PaymentMethod;
 import com.adyen.checkout.ui.CheckoutController;
 import com.adyen.checkout.ui.CheckoutSetupParameters;
 import com.adyen.checkout.ui.CheckoutSetupParametersHandler;
 import com.adyen.checkout.ui.internal.common.util.KeyboardUtil;
+import com.alejandrorios.adyenbasicexample.model.PaymentMethodsRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentSetupRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentVerifyRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentVerifyResponse;
 
 import java.io.IOException;
+import java.util.List;
 
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -47,262 +54,373 @@ import okhttp3.ResponseBody;
  * Created by timon on 07/08/2017.
  */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    private static final String TAG = MainActivity.class.getSimpleName();
+	private static final String TAG = MainActivity.class.getSimpleName();
 
-    private static final int REQUEST_CODE_CHECKOUT = 1;
+	private static final int REQUEST_CODE_CHECKOUT = 1;
 
-    private static final int FRAGMENT_POSITION_SHOPPING_CART = 0;
+	private static final int FRAGMENT_POSITION_SHOPPING_CART = 0;
 
-    private static final int FRAGMENT_POSITION_CONFIGURATION = FRAGMENT_POSITION_SHOPPING_CART + 1;
+	private static final int FRAGMENT_POSITION_CONFIGURATION = FRAGMENT_POSITION_SHOPPING_CART + 1;
 
-    private static final int FRAGMENT_COUNT = FRAGMENT_POSITION_CONFIGURATION + 1;
+	private static final int FRAGMENT_COUNT = FRAGMENT_POSITION_CONFIGURATION + 1;
 
-    private ConfigurationFragment mConfigurationFragment;
+	private ConfigurationFragment mConfigurationFragment;
 
-    private ViewPager mViewPager;
+	private ViewPager mViewPager;
 
-    private Button mCheckoutButton;
+	private Button mCheckoutButton, mPaymentButton;
 
-    private ContentLoadingProgressBar mProgressBar;
+	private ContentLoadingProgressBar mProgressBar;
 
-    private CompositeDisposable mCompositeDisposable = new CompositeDisposable();
+	private CompositeDisposable mCompositeDisposable = new CompositeDisposable();
 
-    @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.button_checkout) {
-            CheckoutController.startPayment(this, new CheckoutSetupParametersHandler() {
-                @Override
-                public void onRequestPaymentSession(@NonNull CheckoutSetupParameters checkoutSetupParameters) {
-                    retrievePaymentSession(checkoutSetupParameters);
-                }
+	@Override
+	public void onClick(View view) {
+		switch (view.getId()) {
+			case R.id.button_checkout:		// CHECKOUT Button
+				CheckoutController.startPayment(this, new CheckoutSetupParametersHandler() {
+					@Override
+					public void onRequestPaymentSession(@NonNull CheckoutSetupParameters checkoutSetupParameters) {
+						retrieveCheckoutSession(checkoutSetupParameters);        //1
+					}
 
-                @Override
-                public void onError(@NonNull CheckoutException checkoutException) {
-                    handleCheckoutException(checkoutException);
-                }
-            });
-        }
-    }
+					@Override
+					public void onError(@NonNull CheckoutException checkoutException) {
+						handleCheckoutException(checkoutException);
+					}
+				});
+				break;
+			case R.id.button_payment:		// CHECKOUT WITH UI Button
+				PaymentController.startPayment(this, new PaymentSetupParametersHandler() {
+					@Override
+					public void onRequestPaymentSession(@NonNull PaymentSetupParameters paymentSetupParameters) {
+						retrievePaymentSession(paymentSetupParameters);
+					}
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+					@Override
+					public void onError(@NonNull CheckoutException checkoutException) {
+						Toast.makeText(MainActivity.this, "Error: " + checkoutException.getMessage(), Toast.LENGTH_SHORT).show();
+					}
+				});
+				break;
+		}
+	}
 
-        setContentView(R.layout.activity_main);
+	@Override
+	protected void onCreate(@Nullable Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 
-        mViewPager = findViewById(R.id.viewPager_tabs);
-        mViewPager.setAdapter(new TabsAdapter(getSupportFragmentManager()));
-        mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-            @Override
-            public void onPageSelected(int position) {
-                if (position == FRAGMENT_POSITION_SHOPPING_CART) {
-                    KeyboardUtil.hide(mViewPager);
-                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
-                } else if (position == FRAGMENT_POSITION_CONFIGURATION) {
-                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-                }
-            }
-        });
-        mProgressBar = findViewById(R.id.progressBar);
-        mCheckoutButton = findViewById(R.id.button_checkout);
-        mCheckoutButton.setOnClickListener(this);
+		setContentView(R.layout.activity_main);
 
-        if (savedInstanceState == null) {
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
-        }
-    }
+		mViewPager = findViewById(R.id.viewPager_tabs);
+		mViewPager.setAdapter(new TabsAdapter(getSupportFragmentManager()));
+		mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+			@Override
+			public void onPageSelected(int position) {
+				if (position == FRAGMENT_POSITION_SHOPPING_CART) {
+					KeyboardUtil.hide(mViewPager);
+					getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+				} else if (position == FRAGMENT_POSITION_CONFIGURATION) {
+					getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+				}
+			}
+		});
+		mProgressBar = findViewById(R.id.progressBar);
+		mCheckoutButton = findViewById(R.id.button_checkout);
+		mPaymentButton = findViewById(R.id.button_payment);
+		mPaymentButton.setOnClickListener(this);
+		mCheckoutButton.setOnClickListener(this);
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+		if (savedInstanceState == null) {
+			getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+		}
+	}
 
-        if (requestCode == REQUEST_CODE_CHECKOUT) {
-            if (resultCode == PaymentMethodHandler.RESULT_CODE_OK) {
-                PaymentResult paymentResult = PaymentMethodHandler.Util.getPaymentResult(data);
-                //noinspection ConstantConditions
-                verify(paymentResult.getPayload());
-            } else {
-                CheckoutException checkoutException = PaymentMethodHandler.Util.getCheckoutException(data);
-                String message = checkoutException != null ? checkoutException.getMessage() : "null";
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
 
-                if (resultCode == PaymentMethodHandler.RESULT_CODE_CANCELED) {
-                    Toast.makeText(MainActivity.this, "Cancelled. Error: " + message, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Error: " + message, Toast.LENGTH_SHORT).show();
-                }
-            }
+		if (requestCode == REQUEST_CODE_CHECKOUT) {                            //5
+			if (resultCode == PaymentMethodHandler.RESULT_CODE_OK) {
+				PaymentResult paymentResult = PaymentMethodHandler.Util.getPaymentResult(data);
+				//noinspection ConstantConditions
+				verify(paymentResult.getPayload());
+			} else {
+				CheckoutException checkoutException = PaymentMethodHandler.Util.getCheckoutException(data);
+				String message = checkoutException != null ? checkoutException.getMessage() : "null";
 
-            mCheckoutButton.setClickable(true);
-        }
-    }
+				if (resultCode == PaymentMethodHandler.RESULT_CODE_CANCELED) {
+					Toast.makeText(MainActivity.this, "Cancelled. Error: " + message, Toast.LENGTH_SHORT).show();
+				} else {
+					Toast.makeText(this, "Error: " + message, Toast.LENGTH_SHORT).show();
+				}
+			}
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
+			mCheckoutButton.setClickable(true);
+			mPaymentButton.setClickable(true);
+		}
+	}
 
-        mCompositeDisposable.dispose();
-    }
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
 
-    private void retrievePaymentSession(@NonNull CheckoutSetupParameters checkoutSetupParameters) {
-        PaymentSetupRequest paymentSetupRequest = mConfigurationFragment != null
-                ? mConfigurationFragment.getPaymentSetupRequest(checkoutSetupParameters)
-                : null;
+		mCompositeDisposable.dispose();
+	}
 
-        if (paymentSetupRequest == null) {
-            mViewPager.setCurrentItem(FRAGMENT_POSITION_CONFIGURATION);
-        } else {
-            mCheckoutButton.setClickable(false);
-            mProgressBar.show();
+	private void retrieveCheckoutSession(@NonNull CheckoutSetupParameters checkoutSetupParameters) {
+		PaymentSetupRequest paymentSetupRequest = mConfigurationFragment != null
+				? mConfigurationFragment.getPaymentSetupRequest(checkoutSetupParameters)
+				: null;
 
-            mViewPager.setCurrentItem(FRAGMENT_POSITION_SHOPPING_CART);
+		PaymentMethodsRequest paymentMethodsRequest = mConfigurationFragment != null
+				? mConfigurationFragment.getPaymentMethodsRequest(checkoutSetupParameters)
+				: null;
 
-            CheckoutService.INSTANCE
-                    .paymentSession(paymentSetupRequest)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(createPaymentSessionObserver());
-        }
-    }
+		if (paymentSetupRequest == null) {
+			mViewPager.setCurrentItem(FRAGMENT_POSITION_CONFIGURATION);
+		} else {
+			mCheckoutButton.setClickable(false);
+			mPaymentButton.setClickable(false);
+			mProgressBar.show();
 
-    private void handleCheckoutException(@NonNull CheckoutException checkoutException) {
-        Toast.makeText(MainActivity.this, "Error: " + checkoutException.getMessage(), Toast.LENGTH_SHORT).show();
-    }
+			mViewPager.setCurrentItem(FRAGMENT_POSITION_SHOPPING_CART);
 
-    private void verify(@NonNull String payload) {
-        mProgressBar.show();
-        PaymentVerifyRequest paymentVerifyRequest = new PaymentVerifyRequest(payload);
+			CheckoutService.INSTANCE                                    //2
+					.paymentSession(paymentSetupRequest)
+					.subscribeOn(Schedulers.io())
+					.observeOn(AndroidSchedulers.mainThread())
+					.subscribe(createCheckoutSessionObserver());
 
-        CheckoutService.INSTANCE
-                .verify(paymentVerifyRequest)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(createVerifyObserver());
-    }
+//			CheckoutService.INSTANCE
+//					.paymentMethods(paymentMethodsRequest)
+//					.subscribeOn(Schedulers.io())
+//					.observeOn(AndroidSchedulers.mainThread())
+//					.subscribe(createPaymentSessionObserver());
+		}
+	}
 
-    @NonNull
-    private Observer<ResponseBody> createPaymentSessionObserver() {
-        return new Observer<ResponseBody>() {
-            @Override
-            public void onSubscribe(@NonNull Disposable disposable) {
-                mCompositeDisposable.add(disposable);
-            }
+	private void retrievePaymentSession(@NonNull PaymentSetupParameters checkoutSetupParameters) {
+		PaymentSetupRequest paymentSetupRequest = mConfigurationFragment != null
+				? mConfigurationFragment.getPaymentSetupRequest(checkoutSetupParameters)
+				: null;
 
-            @Override
-            public void onNext(@NonNull ResponseBody responseBody) {
-                try {
-                    String encodedPaymentSession = responseBody.string();
-                    StartPaymentParametersHandler handler = createStartPaymentParametersHandler();
-                    CheckoutController.handlePaymentSessionResponse(MainActivity.this, encodedPaymentSession, handler);
-                } catch (IOException | IllegalArgumentException e) {
-                    Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, e.getLocalizedMessage(), e);
-                    mCheckoutButton.setClickable(true);
-                }
-            }
+		if (paymentSetupRequest == null) {
+			mViewPager.setCurrentItem(FRAGMENT_POSITION_CONFIGURATION);
+		} else {
+			mCheckoutButton.setClickable(false);
+			mPaymentButton.setClickable(false);
+			mProgressBar.show();
 
-            @Override
-            public void onError(@NonNull Throwable error) {
-                Toast.makeText(getApplicationContext(), error.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                mProgressBar.hide();
-                mCheckoutButton.setClickable(true);
-            }
+			mViewPager.setCurrentItem(FRAGMENT_POSITION_SHOPPING_CART);
 
-            @Override
-            public void onComplete() {
-                mProgressBar.hide();
-            }
-        };
-    }
+			CheckoutService.INSTANCE                                    //2
+					.paymentSession(paymentSetupRequest)
+					.subscribeOn(Schedulers.io())
+					.observeOn(AndroidSchedulers.mainThread())
+					.subscribe(createPaymentSessionObserver());
+		}
+	}
 
-    @NonNull
-    private StartPaymentParametersHandler createStartPaymentParametersHandler() {
-        return new StartPaymentParametersHandler() {
-            @Override
-            public void onPaymentInitialized(@NonNull StartPaymentParameters startPaymentParameters) {
-                PaymentMethodHandler checkoutHandler = CheckoutController.getCheckoutHandler(startPaymentParameters);
-                checkoutHandler.handlePaymentMethodDetails(MainActivity.this, REQUEST_CODE_CHECKOUT);
-            }
+	private void handleCheckoutException(@NonNull CheckoutException checkoutException) {
+		Toast.makeText(MainActivity.this, "Error: " + checkoutException.getMessage(), Toast.LENGTH_SHORT).show();
+	}
 
-            @Override
-            public void onError(@NonNull CheckoutException checkoutException) {
-                handleCheckoutException(checkoutException);
-            }
-        };
-    }
+	private void verify(@NonNull String payload) {
+		mProgressBar.show();
+		PaymentVerifyRequest paymentVerifyRequest = new PaymentVerifyRequest(payload);
 
-    @NonNull
-    private Observer<PaymentVerifyResponse> createVerifyObserver() {
-        return new Observer<PaymentVerifyResponse>() {
-            @Override
-            public void onSubscribe(@NonNull Disposable disposable) {
-                mCompositeDisposable.add(disposable);
-            }
+		CheckoutService.INSTANCE                    //6
+				.verify(paymentVerifyRequest)
+				.subscribeOn(Schedulers.io())
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(createVerifyObserver());
+	}
 
-            @Override
-            public void onNext(@NonNull PaymentVerifyResponse paymentVerifyResponse) {
-                PaymentVerifyResponse.AuthResponse authResponse = paymentVerifyResponse.getAuthResponse();
+	@NonNull
+	private Observer<ResponseBody> createCheckoutSessionObserver() {
+		return new Observer<ResponseBody>() {
+			@Override
+			public void onSubscribe(@NonNull Disposable disposable) {
+				mCompositeDisposable.add(disposable);
+			}
 
-                if (authResponse == PaymentVerifyResponse.AuthResponse.AUTHORIZED || authResponse == PaymentVerifyResponse.AuthResponse.RECEIVED) {
-                    startActivity(new Intent(MainActivity.this, SuccessActivity.class));
-                } else {
-                    Toast.makeText(getApplicationContext(), "Result: " + authResponse, Toast.LENGTH_SHORT).show();
-                }
-            }
+			@Override
+			public void onNext(@NonNull ResponseBody responseBody) {
+				try {
+					String encodedPaymentSession = responseBody.string();                    //3
+					StartPaymentParametersHandler handler = createStartCheckoutParametersHandler();
+					CheckoutController.handlePaymentSessionResponse(MainActivity.this, encodedPaymentSession, handler);
+				} catch (IOException | IllegalArgumentException e) {
+					Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+					Log.e(TAG, e.getLocalizedMessage(), e);
+					mCheckoutButton.setClickable(true);
+					mPaymentButton.setClickable(true);
+				}
+			}
 
-            @Override
-            public void onError(@NonNull Throwable error) {
-                Toast.makeText(getApplicationContext(), error.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                mProgressBar.hide();
-            }
+			@Override
+			public void onError(@NonNull Throwable error) {
+				Toast.makeText(getApplicationContext(), error.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+				mProgressBar.hide();
+				mCheckoutButton.setClickable(true);
+				mPaymentButton.setClickable(true);
+			}
 
-            @Override
-            public void onComplete() {
-                mProgressBar.hide();
-            }
-        };
-    }
+			@Override
+			public void onComplete() {
+				mProgressBar.hide();
+			}
+		};
+	}
 
-    private final class TabsAdapter extends FragmentPagerAdapter {
-        private TabsAdapter(@NonNull FragmentManager fragmentManager) {
-            super(fragmentManager);
-        }
+	@NonNull
+	private Observer<ResponseBody> createPaymentSessionObserver() {
+		return new Observer<ResponseBody>() {
+			@Override
+			public void onSubscribe(@NonNull Disposable disposable) {
+				mCompositeDisposable.add(disposable);
+			}
 
-        @Override
-        public int getCount() {
-            return FRAGMENT_COUNT;
-        }
+			@Override
+			public void onNext(@NonNull ResponseBody responseBody) {
+				try {
+					String encodedPaymentSession = responseBody.string();                    //3
+					StartPaymentParametersHandler handler = createStartPaymentParametersHandler();
+					PaymentController.handlePaymentSessionResponse(MainActivity.this, encodedPaymentSession, handler);
+				} catch (IOException | IllegalArgumentException e) {
+					Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+					Log.e(TAG, e.getLocalizedMessage(), e);
+					mCheckoutButton.setClickable(true);
+					mPaymentButton.setClickable(true);
+				}
+			}
 
-        @Override
-        public Fragment getItem(int position) {
-            switch (position) {
-                case FRAGMENT_POSITION_SHOPPING_CART:
-                    return new ShoppingCartFragment();
-                case FRAGMENT_POSITION_CONFIGURATION:
-                    return new ConfigurationFragment();
-                default:
-                    throw new IllegalArgumentException("Invalid position.");
-            }
-        }
+			@Override
+			public void onError(@NonNull Throwable error) {
+				Toast.makeText(getApplicationContext(), error.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+				mProgressBar.hide();
+				mCheckoutButton.setClickable(true);
+				mPaymentButton.setClickable(true);
+			}
 
-        @NonNull
-        @Override
-        public Object instantiateItem(ViewGroup container, int position) {
-            Fragment fragment = (Fragment) super.instantiateItem(container, position);
+			@Override
+			public void onComplete() {
+				mProgressBar.hide();
+			}
+		};
+	}
 
-            if (position == FRAGMENT_POSITION_CONFIGURATION) {
-                mConfigurationFragment = (ConfigurationFragment) fragment;
-            }
+	@NonNull
+	private StartPaymentParametersHandler createStartCheckoutParametersHandler() {
+		return new StartPaymentParametersHandler() {
+			@Override
+			public void onPaymentInitialized(@NonNull StartPaymentParameters startPaymentParameters) {
+				//This shows the screens to make the pay according the paymentMethod
+				PaymentMethodHandler checkoutHandler = CheckoutController.getCheckoutHandler(startPaymentParameters);
+				checkoutHandler.handlePaymentMethodDetails(MainActivity.this, REQUEST_CODE_CHECKOUT);                //4
+			}
 
-            return fragment;
-        }
+			@Override
+			public void onError(@NonNull CheckoutException checkoutException) {
+				handleCheckoutException(checkoutException);
+			}
+		};
+	}
 
-        @Override
-        public void destroyItem(ViewGroup container, int position, Object object) {
-            super.destroyItem(container, position, object);
+	@NonNull
+	private StartPaymentParametersHandler createStartPaymentParametersHandler() {
+		return new StartPaymentParametersHandler() {
+			@Override
+			public void onPaymentInitialized(@NonNull StartPaymentParameters startPaymentParameters) {
+				PaymentReference paymentReference = startPaymentParameters.getPaymentReference();
+				List<PaymentMethod> paymentMethod = startPaymentParameters.getPaymentSession().getPaymentMethods();
 
-            if (object == mConfigurationFragment) {
-                mConfigurationFragment = null;
-            }
-        }
-    }
+				Intent intent = new Intent(MainActivity.this, PaymentActivity.class);
+				intent.putExtra("EXTRA_PAYMENT_REFERENCE", paymentReference);
+				startActivity(intent);
+			}
+
+			@Override
+			public void onError(@NonNull CheckoutException checkoutException) {
+				handleCheckoutException(checkoutException);
+			}
+		};
+	}
+
+	@NonNull
+	private Observer<PaymentVerifyResponse> createVerifyObserver() {
+		return new Observer<PaymentVerifyResponse>() {
+			@Override
+			public void onSubscribe(@NonNull Disposable disposable) {
+				mCompositeDisposable.add(disposable);
+			}
+
+			@Override
+			public void onNext(@NonNull PaymentVerifyResponse paymentVerifyResponse) {
+				PaymentVerifyResponse.AuthResponse authResponse = paymentVerifyResponse.getAuthResponse();                    //7
+
+				if (authResponse == PaymentVerifyResponse.AuthResponse.AUTHORIZED || authResponse == PaymentVerifyResponse.AuthResponse.RECEIVED) {
+					startActivity(new Intent(MainActivity.this, SuccessActivity.class));
+				} else {
+					Toast.makeText(getApplicationContext(), "Result: " + authResponse, Toast.LENGTH_SHORT).show();
+				}
+			}
+
+			@Override
+			public void onError(@NonNull Throwable error) {
+				Toast.makeText(getApplicationContext(), error.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+				mProgressBar.hide();
+			}
+
+			@Override
+			public void onComplete() {
+				mProgressBar.hide();
+			}
+		};
+	}
+
+	private final class TabsAdapter extends FragmentPagerAdapter {
+		private TabsAdapter(@NonNull FragmentManager fragmentManager) {
+			super(fragmentManager);
+		}
+
+		@Override
+		public int getCount() {
+			return FRAGMENT_COUNT;
+		}
+
+		@Override
+		public Fragment getItem(int position) {
+			switch (position) {
+				case FRAGMENT_POSITION_SHOPPING_CART:
+					return new ShoppingCartFragment();
+				case FRAGMENT_POSITION_CONFIGURATION:
+					return new ConfigurationFragment();
+				default:
+					throw new IllegalArgumentException("Invalid position.");
+			}
+		}
+
+		@NonNull
+		@Override
+		public Object instantiateItem(ViewGroup container, int position) {
+			Fragment fragment = (Fragment) super.instantiateItem(container, position);
+
+			if (position == FRAGMENT_POSITION_CONFIGURATION) {
+				mConfigurationFragment = (ConfigurationFragment) fragment;
+			}
+
+			return fragment;
+		}
+
+		@Override
+		public void destroyItem(ViewGroup container, int position, Object object) {
+			super.destroyItem(container, position, object);
+
+			if (object == mConfigurationFragment) {
+				mConfigurationFragment = null;
+			}
+		}
+	}
 }

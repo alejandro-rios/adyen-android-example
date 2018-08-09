@@ -1,30 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:contentDescription="@null"
         android:scaleType="fitXY"
-        android:src="@drawable/background"/>
+        android:src="@drawable/background" />
 
     <android.support.v4.view.ViewPager
         android:id="@+id/viewPager_tabs"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@id/button_checkout"/>
+        android:layout_height="wrap_content"
+        android:layout_above="@id/lytButtons" />
 
-    <Button
-        android:id="@+id/button_checkout"
-        style="@style/Widget.AppCompat.Button.Colored"
+    <LinearLayout
+        android:id="@+id/lytButtons"
         android:layout_width="match_parent"
-        android:layout_height="58dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_gravity="center"
-        android:layout_margin="@dimen/standard_margin"
-        android:text="@string/button_checkout"/>
+        android:layout_marginBottom="@dimen/standard_half_margin"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/button_checkout"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_gravity="center"
+            android:layout_marginEnd="@dimen/standard_margin"
+            android:layout_marginStart="@dimen/standard_margin"
+            android:text="@string/button_checkout" />
+
+        <Button
+            android:id="@+id/button_payment"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_gravity="center"
+            android:layout_marginEnd="@dimen/standard_margin"
+            android:layout_marginStart="@dimen/standard_margin"
+            android:text="@string/button_payment" />
+    </LinearLayout>
 
     <android.support.v4.widget.ContentLoadingProgressBar
         android:id="@+id/progressBar"
@@ -32,6 +51,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:indeterminate="true"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
 </RelativeLayout>

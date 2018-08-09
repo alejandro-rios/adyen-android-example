@@ -34,17 +34,18 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support.constraint:constraint-layout:1.1.2'
 
-    implementation 'io.reactivex.rxjava2:rxjava:2.1.6'
-    implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    // RxJava - RxAndroid
+    implementation 'io.reactivex.rxjava2:rxjava:2.1.17'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
 
+    // Network
     implementation 'com.squareup.retrofit2:retrofit:2.4.0'
     implementation 'com.squareup.retrofit2:converter-moshi:2.4.0'
     implementation 'com.squareup.retrofit2:adapter-rxjava2:2.4.0'
-
     implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
-
     implementation 'com.squareup.moshi:moshi:1.5.0'
 
+    // Adyen
     implementation "com.adyen.checkout:core:2.0.0"
     implementation "com.adyen.checkout:core-card:2.0.0"
     implementation "com.adyen.checkout:util:2.0.0"

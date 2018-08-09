@@ -1,4 +1,14 @@
 <resources>
     <string name="app_name">MARY &amp; MARX</string>
     <string name="button_checkout">Checkout</string>
+    <string name="button_payment">Checkout with UI</string>
+    <string name="title_activity_payment">PaymentActivity</string>
+    <string name="payment_card_cvc">CVC</string>
+    <string name="cvc_3_digit_number">3-digit number</string>
+    <string name="payment_card_expiration_date">Expiration date</string>
+    <string name="payment_card_exp_date">MM/YY</string>
+    <string name="payment__card_holder_name">Credit Card Holder Name</string>
+    <string name="payment_card_edit">Edit</string>
+    <string name="payment_card_number">Credit Card Number</string>
+    <string name="payment_card_16_digit_number">16-digit number</string>
 </resources>

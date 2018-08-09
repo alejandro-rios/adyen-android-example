@@ -4,6 +4,7 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.alejandrorios.adyenbasicexample.model.PaymentMethodsRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentSetupRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentVerifyRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentVerifyResponse;
@@ -59,6 +60,11 @@ public interface CheckoutService {
     @Headers(BuildConfig.API_KEY_HEADER_NAME + ":" + BuildConfig.CHECKOUT_API_KEY)
     @POST("payments/result")
     Observable<PaymentVerifyResponse> verify(@NonNull @Body PaymentVerifyRequest paymentVerifyRequest);
+
+    @NonNull
+    @Headers(BuildConfig.API_KEY_HEADER_NAME + ":" + BuildConfig.CHECKOUT_API_KEY)
+    @POST("paymentMethods")
+    Observable<ResponseBody> paymentMethods(@NonNull @Body PaymentMethodsRequest paymentMethodsRequest);
 
     final class Util {
         @NonNull

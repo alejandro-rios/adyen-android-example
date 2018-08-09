@@ -13,4 +13,6 @@
 
     <color name="deep_orange_500">#FF5722</color>
     <color name="deep_orange_700">#E64A19</color>
+
+    <color name="hint_text_color">#979797</color>
 </resources>

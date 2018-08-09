@@ -19,7 +19,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.alejandrorios.adyenbasicexample.SuccessActivity" />
+        <activity android:name=".PaymentActivity" />
+
+        <activity android:name=".SuccessActivity" />
 
     </application>
 
