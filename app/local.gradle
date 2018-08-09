@@ -1,5 +1,5 @@
 /**
- * Rename this file to local.gradle and replace <YOUR_API_KEY> with your Checkout Demo Server API Key.
+ * Replace <YOUR_API_KEY> with your Checkout Demo Server API Key.
  */
 android {
     buildTypes {
