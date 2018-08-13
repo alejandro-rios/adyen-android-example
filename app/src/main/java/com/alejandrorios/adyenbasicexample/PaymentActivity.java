@@ -20,6 +20,7 @@ import com.adyen.checkout.core.card.Card;
 import com.adyen.checkout.core.handler.AdditionalDetailsHandler;
 import com.adyen.checkout.core.handler.ErrorHandler;
 import com.adyen.checkout.core.handler.RedirectHandler;
+import com.adyen.checkout.core.model.CardDetails;
 import com.adyen.checkout.core.model.PaymentMethod;
 import com.adyen.checkout.core.model.PaymentMethodDetails;
 import com.adyen.checkout.core.model.PaymentSession;
@@ -45,12 +46,14 @@ public class PaymentActivity extends AppCompatActivity implements View.OnClickLi
 			Log.i("Adyen", "CreditCard Exp Date: " + mCreditCardExpDate.getText().toString());
 			Log.i("Adyen", "CreditCard Cvc: " + mCreditCardCvc.getText().toString());
 
-			Card card = new Card.Builder()
-					.setExpiryDate(10, 20)
-					.setNumber(mCreditCardNo.getText().toString())
-					.setSecurityCode(mCreditCardCvc.getText().toString())
+			// Can use this to create my CC data?
+			CardDetails cardDetails = new CardDetails.Builder()
+					.setHolderName(mCreditCardHolderName.getText().toString())
+					.setEncryptedCardNumber(mCreditCardNo.getText().toString())
+					.setEncryptedSecurityCode(mCreditCardCvc.getText().toString())
+					.setEncryptedExpiryMonth("10")
+					.setEncryptedExpiryYear("20")
 					.build();
-
 			// Searching what's next here.....
 
 		}
