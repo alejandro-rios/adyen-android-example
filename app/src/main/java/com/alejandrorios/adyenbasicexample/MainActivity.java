@@ -2,6 +2,8 @@ package com.alejandrorios.adyenbasicexample;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -19,6 +21,7 @@ import android.widget.Toast;
 
 import com.adyen.checkout.core.CheckoutException;
 import com.adyen.checkout.core.PaymentController;
+import com.adyen.checkout.core.PaymentHandler;
 import com.adyen.checkout.core.PaymentMethodHandler;
 import com.adyen.checkout.core.PaymentReference;
 import com.adyen.checkout.core.PaymentResult;
@@ -27,6 +30,7 @@ import com.adyen.checkout.core.StartPaymentParameters;
 import com.adyen.checkout.core.handler.PaymentSetupParametersHandler;
 import com.adyen.checkout.core.handler.StartPaymentParametersHandler;
 import com.adyen.checkout.core.model.PaymentMethod;
+import com.adyen.checkout.core.model.PaymentMethodDetails;
 import com.adyen.checkout.ui.CheckoutController;
 import com.adyen.checkout.ui.CheckoutSetupParameters;
 import com.adyen.checkout.ui.CheckoutSetupParametersHandler;
@@ -36,7 +40,11 @@ import com.alejandrorios.adyenbasicexample.model.PaymentSetupRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentVerifyRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentVerifyResponse;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.Observer;
@@ -335,9 +343,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 			public void onPaymentInitialized(@NonNull StartPaymentParameters startPaymentParameters) {
 				PaymentReference paymentReference = startPaymentParameters.getPaymentReference();
 				List<PaymentMethod> paymentMethod = startPaymentParameters.getPaymentSession().getPaymentMethods();
+				PaymentMethod thePay = paymentMethod.get(1);
 
 				Intent intent = new Intent(MainActivity.this, PaymentActivity.class);
-				intent.putExtra("EXTRA_PAYMENT_REFERENCE", paymentReference);
+				Bundle bundle = new Bundle();
+				bundle.putParcelableArrayList("EXTRA_PAYMENT_METHOD", (ArrayList<? extends Parcelable>) paymentMethod);
+				bundle.putParcelable("EXTRA_PAYMENT_REFERENCE", paymentReference);
+				intent.putExtras(bundle);
 				startActivity(intent);
 			}
 
