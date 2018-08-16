@@ -15,4 +15,5 @@
     <color name="deep_orange_700">#E64A19</color>
 
     <color name="hint_text_color">#979797</color>
+    <color name="ErrorRed">#cc0000</color>
 </resources>

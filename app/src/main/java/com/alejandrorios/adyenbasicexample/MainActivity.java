@@ -34,6 +34,7 @@ import com.adyen.checkout.core.model.PaymentMethodDetails;
 import com.adyen.checkout.ui.CheckoutController;
 import com.adyen.checkout.ui.CheckoutSetupParameters;
 import com.adyen.checkout.ui.CheckoutSetupParametersHandler;
+import com.adyen.checkout.ui.internal.card.CardHandler;
 import com.adyen.checkout.ui.internal.common.util.KeyboardUtil;
 import com.alejandrorios.adyenbasicexample.model.PaymentMethodsRequest;
 import com.alejandrorios.adyenbasicexample.model.PaymentSetupRequest;
