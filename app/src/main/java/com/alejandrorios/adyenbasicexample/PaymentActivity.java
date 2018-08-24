@@ -51,6 +51,7 @@ public class PaymentActivity extends AppCompatActivity {
 	private PaymentMethodDetails mPaymentMethodDetails;
 	private PaymentHandler mPaymentHandler;
 	private PaymentReference mpaymentRef;
+	private PaymentSession mPaymentSession;
 
 	@BindView(R.id.credit_card_no)
 	EditText mCreditCardNo;
@@ -87,48 +88,34 @@ public class PaymentActivity extends AppCompatActivity {
 	@OnClick(R.id.button_make_pay)
 	public void onPayClicked() {
 
-		if (cardValidations(mCreditCardHolderName.getText().toString(),
-				mCreditCardNo.getText().toString(), mCreditCardExpDate.getText().toString(),
-				mCreditCardCvc.getText().toString())) {
-			Toast.makeText(this, "VALID", Toast.LENGTH_SHORT).show();
-		} else {
-			Toast.makeText(this, "INVALID", Toast.LENGTH_SHORT).show();
+		try {
+			CardDetails cardDetails = buildCardDetails();
+
+			if (cardDetails != null) {
+//				getPaymentHandler().initiatePayment(mTargetPaymentMethod, cardDetails);
+			}
+		} catch (EncryptionException e) {
+			Toast.makeText(this, "Oh no!!! "+e.getMessage(), Toast.LENGTH_SHORT).show();
 		}
-
-
-		// Can use this to create my CC data?
-//		CardDetails cardDetails = buildCardDetails();
-
-		new CardDetails.Builder()
-				.setHolderName(mCreditCardHolderName.getText().toString())
-				.setEncryptedCardNumber(mCreditCardNo.getText().toString())
-				.setEncryptedSecurityCode(mCreditCardCvc.getText().toString())
-				.setEncryptedExpiryMonth("10")
-				.setEncryptedExpiryYear("20")
-				.build();
-		// Searching what's next here.....
-
-		Card cardd = new Card.Builder()
-				.setNumber(mCreditCardNo.getText().toString())
-				.setExpiryDate(10, 20)
-				.setSecurityCode(mCreditCardNo.getText().toString())
-				.build();
 	}
 
 	private CardDetails buildCardDetails() throws EncryptionException {
+
+		if (!isValidCardDetails()) {
+			return null;
+		}
 
 		CardValidator.HolderNameValidationResult holderNameValidationResult = getHolderNameValidationResult();
 //		PhoneNumberUtil.ValidationResult phoneNumberValidationResult = getPhoneNumberValidationResult();
 		Card card = parseCardFromInput();
 
-		PaymentSession paymentSession = mpaymentRef;
-
-		if (paymentSession == null) {
+		if (mPaymentSession == null) {
 			return null;
 		}
+		return null;
 
-		Date generationTime = paymentSession.getGenerationTime();
-		String publicKey = Objects.requireNonNull(paymentSession.getPublicKey(), CardHandler.ERROR_MESSAGE_PUBLIC_KEY_NULL);
+		Date generationTime = mPaymentSession.getGenerationTime();
+		String publicKey = Objects.requireNonNull(mPaymentSession.getPublicKey(), CardHandler.ERROR_MESSAGE_PUBLIC_KEY_NULL);
 		EncryptedCard encryptedCard;
 
 		try {
@@ -164,6 +151,12 @@ public class PaymentActivity extends AppCompatActivity {
 //			TextViewUtil.setErrorTextColor(mCreditCardHolderName);
 //		}
 //	}
+
+	public boolean isValidCardDetails() {
+		return mPaymentSession != null
+				&& getHolderNameValidationResult().getValidity() == CardValidator.Validity.VALID
+				&& parseCardFromInput() != null;
+	}
 
 	@NonNull
 	private CardValidator.HolderNameValidationResult getHolderNameValidationResult() {
@@ -286,7 +279,7 @@ public class PaymentActivity extends AppCompatActivity {
 		mPaymentHandler.getPaymentSessionObservable().observe(this, new Observer<PaymentSession>() {
 			@Override
 			public void onChanged(@NonNull PaymentSession paymentSession) {
-				// TODO: Handle PaymentSession change, i.e. refresh your list of PaymentMethods.
+				mPaymentSession = paymentSession;
 			}
 		});
 		mPaymentHandler.getPaymentResultObservable().observe(this, new Observer<PaymentResult>() {
