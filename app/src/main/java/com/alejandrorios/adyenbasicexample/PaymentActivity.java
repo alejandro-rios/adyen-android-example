@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -27,6 +28,7 @@ import com.adyen.checkout.core.card.internal.CardValidatorImpl;
 import com.adyen.checkout.core.handler.AdditionalDetailsHandler;
 import com.adyen.checkout.core.handler.ErrorHandler;
 import com.adyen.checkout.core.handler.RedirectHandler;
+import com.adyen.checkout.core.internal.model.PaymentMethodImpl;
 import com.adyen.checkout.core.model.CardDetails;
 import com.adyen.checkout.core.model.PaymentMethod;
 import com.adyen.checkout.core.model.PaymentMethodDetails;
@@ -35,6 +37,7 @@ import com.adyen.checkout.ui.internal.card.CardHandler;
 import com.adyen.checkout.ui.internal.common.util.PaymentMethodUtil;
 import com.adyen.checkout.ui.internal.common.util.PhoneNumberUtil;
 import com.adyen.checkout.ui.internal.common.util.TextViewUtil;
+import com.adyen.checkout.util.PaymentMethodTypes;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -90,9 +93,10 @@ public class PaymentActivity extends AppCompatActivity {
 
 		try {
 			CardDetails cardDetails = buildCardDetails();
+			PaymentMethod mPaymentMethod = PaymentMethodImpl.findByType(mAllowedPaymentMethods, PaymentMethodTypes.CARD);
 
 			if (cardDetails != null) {
-//				getPaymentHandler().initiatePayment(mTargetPaymentMethod, cardDetails);
+				mPaymentHandler.initiatePayment(mPaymentMethod, cardDetails);
 			}
 		} catch (EncryptionException e) {
 			Toast.makeText(this, "Oh no!!! "+e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -112,10 +116,10 @@ public class PaymentActivity extends AppCompatActivity {
 		if (mPaymentSession == null) {
 			return null;
 		}
-		return null;
+//		return null;
 
 		Date generationTime = mPaymentSession.getGenerationTime();
-		String publicKey = Objects.requireNonNull(mPaymentSession.getPublicKey(), CardHandler.ERROR_MESSAGE_PUBLIC_KEY_NULL);
+		String publicKey = Objects.requireNonNull(mPaymentSession.getPublicKey(), "Public key for card payments has not been generated.");
 		EncryptedCard encryptedCard;
 
 		try {
@@ -285,7 +289,7 @@ public class PaymentActivity extends AppCompatActivity {
 		mPaymentHandler.getPaymentResultObservable().observe(this, new Observer<PaymentResult>() {
 			@Override
 			public void onChanged(@NonNull PaymentResult paymentResult) {
-				// TODO: Handle PaymentResult.
+				Log.i("PaymentResult", paymentResult.getPayload()+" - "+paymentResult.getResultCode());
 			}
 		});
 
